@@ -1,13 +1,1 @@
-{
-  "type": "service_account",
-  "project_id": "gen-lang-client-0596136072",
-  "private_key_id": "122e94fbf21982912d4554c3b94f5e30e26ef62a",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDNcvvVn0kvc+FC\neSaxFBuVoatHj5vGC704i+5nmB+NN+YlLMoIU2StlPcRMJZV7YaXjGUsO9fC9/lk\n+WBhc6keiYxctw+i75nvIrz3uf1Muwt5SebuBa/Bwm6xE1aYfW25Nt+NZ+YV9EiM\nc8O4DT52OcWfMNMpVhUTx/AV9tcu9S/uRolsN6UpRYxbBHo5mYQFkU7/icuLTYR3\nKJLn1e4qnaOvukThFT27kjZfLuBFKUYk4oW47v+o0K+Kg1qd5Ts+iTQQja+onPmS\nsx1qEYJmye/hzuZiBAJLjdnmxCOQCy2UCqhdw6I7YF258w16RJZs04RUwY9GZaXv\n6zvPEQvTAgMBAAECggEAA7S+SQU3KCb6YKn+aHu8LHMFIiS7otMiL66+hABHf9M+\nHVxbrJ8sfFq1wwnR76ATdhDI4Acx7JXVwHXxjVbgk+kK4iVFn+/O70Evw9w6bubo\nEK3XmS8uRqizBhJOO2P2PCNHdxQkhclC6Cp/OyCDoiHt20hH/UGAEdV6eQfB3ycl\nPXZcmdvbwCPVEVnKmjetM5+GWS+D9m2u1iPEfcpCgK67O6DHQJs0RLW5Xiw9mTba\nyJD+Ko1vXSozGSNAJUbhu+hl6SeS0NmcBNWAOY5wRE7/X5YV+Fused1O7Yx+uZbc\n59WTYSD7IqWpMo15yYtSFlFwcj/EIIgBLVK8I0V/CQKBgQDlrTXAo55kXufAMFPS\niKNPe5HDPhfujL5vKfiEOCUwum3iOM2lR68AMf5S3SkCaoZ9PnjHU8yiocuPyUPi\nQYLdul0pbxIp/L7jKaAstEMoRT2cbo0dM6DXACDuyOtYrrVJvg/SdX6nBNr/rVRB\nvWe9ajNnHRJVry4+FPLY7MYBJQKBgQDk/u6knbW0g0GwMVjKgoRtmU1g5ig0qgJ8\n5FXnHGgiRjZxkW1SFExeYmJ0yfUcuhloqafR+4vh5lRds1BBjBrcEVS/f/Fqd9kM\ne7baOGmcMFiNyoMP5TqUxABYHPnHLkFMMJCYbdffL5eiWEPyR0xntI4a8kHf63en\nJUOwBBwzlwKBgQC9CbyFSuZSbH7JA73qOgZYpDdMAK6H7JXNPzlJ8kBCBB/vI5u3\nXvHd8kgGgft//pelPCcCwKlcbljyhtB1yD/jKcIGGWJU5q9in18zjEb+PUdBmwhQ\nsa6/Z16zyvFSM7II+QNi0MwmwetSp6IC3dcl4uReCWKO3bns5ScgfnlWdQKBgHzf\nsA9AmUe4k+ea4Up9Ze3GPXXrzFz7oKOueFGxIfAeza2cmjq6KvMFP59kSi/CI/z5\nFzTgsWUcj0EReWBlIHiFUuuiv2lJtaijBhF11dGAY6nelx3h6NIbF/z0wBin1p/P\nk+orbB6e+1diPpst2jJrOVrkZJvQ8czJ+2FOvHo9AoGAaouClP5QXKX1AyCcEiGY\nWyp6O4P6ecDE3TJpxZJdjl+WkaOj8rRedxGaBSGx+vMZE5LT3PTMWu3oaPoZvKFQ\nHTP38fGq5W0PLd6Ni3pPcSF1GEI6WazlnycvrVESGVdC4uBVjf2r5qzc+f57JZ5z\nnNZRkIgpbAMoWYhrZylDLdM=\n-----END PRIVATE KEY-----\n",
-  "client_email": "neuraltalk-ai@gen-lang-client-0596136072.iam.gserviceaccount.com",
-  "client_id": "109164728265332256133",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/neuraltalk-ai%40gen-lang-client-0596136072.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+
