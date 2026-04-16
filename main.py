@@ -23,6 +23,7 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 def convert_to_wav(audio_data: bytes) -> bytes:
     """Raw PCM ஆடியோவை WAV கோப்பாக மாற்றும்"""
     data_size = len(audio_data)
+    # 24kHz, 16-bit, Mono ஆடியோவிற்கான சரியான ஹெடர்
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
         b"RIFF", 36 + data_size, b"WAVE", b"fmt ",
@@ -32,7 +33,6 @@ def convert_to_wav(audio_data: bytes) -> bytes:
 
 @app.get("/")
 async def home(request: Request):
-    # இங்கிருந்த பிழையை (Internal Server Error) சரிசெய்துவிட்டேன்
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/generate")
@@ -45,10 +45,9 @@ async def generate_audio(request: Request):
         if not text:
             return JSONResponse({"status": "error", "message": "Text is empty!"}, status_code=400)
 
-        # 2.5 மாடல் அல்லது 2.0-flash எதிலாவது ஒன்று கண்டிப்பாக வேலை செய்யும்
-        # தற்போது கூகுள் பரிந்துரைக்கும் மாடல்
+        # மாடல் பெயரை 2.5 TTS-க்கு மாற்றியுள்ளேன்
         response = client.models.generate_content(
-            model="gemini-2.0-flash", 
+            model="gemini-2.5-flash-preview-tts", 
             contents=text,
             config=types.GenerateContentConfig(
                 response_modalities=["audio"],
@@ -75,6 +74,7 @@ async def generate_audio(request: Request):
         with open(output_path, "wb") as f:
             f.write(convert_to_wav(audio_bytes))
 
+        # பிரவுசர் கேச் (Cache) ஆகாமல் இருக்க Random ID
         return {"status": "success", "audio_url": f"/static/{file_name}?v={os.urandom(2).hex()}"}
 
     except Exception as e:
