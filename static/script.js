@@ -1,36 +1,4 @@
-document.getElementById('generate-btn').addEventListener('click', async () => {
-    const text = document.getElementById('text').value;
-    const voice = document.getElementById('voice').value;
-    const btn = document.getElementById('generate-btn');
-
-    if (!text) {
-        alert("தயவுசெய்து ஏதேனும் டைப் செய்யுங்கள்!");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.innerText = "Generating...";
-
-    try {
-        const response = await fetch('/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, voice })
-        });
-
-        const data = await response.json();
-        if (data.status === "success") {
-            const audio = document.getElementById('audio-player');
-            audio.src = data.audio_url;
-            document.getElementById('result').style.display = 'block';
-            audio.play();
-        } else {
-            alert("Error: " + data.message);
-        }
-    } catch (error) {
-        alert("சிக்னல் கோளாறு! மீண்டும் முயற்சிக்கவும்.");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Generate Audio";
-    }
-});
+const btn=document.getElementById('btn'),player=document.getElementById('player');
+btn.onclick=async()=>{const text=document.getElementById('text').value,voice=document.getElementById('voice').value;btn.disabled=true;btn.innerText='Generating...';const r=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice})});const d=await r.json();if(d.status==='success'){player.src=d.audio_url;player.play();document.getElementById('download').href=d.audio_url;}else alert(d.message);btn.disabled=false;btn.innerText='Generate';}
+document.getElementById('speed').oninput=e=>player.playbackRate=e.target.value;
+document.getElementById('pitch').oninput=e=>player.preservesPitch=false;
