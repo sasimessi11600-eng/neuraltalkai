@@ -9,35 +9,29 @@ from google.genai import types
 
 app = FastAPI()
 
-# static ஃபோல்டர் செட்டப்
+# ஆடியோ சேமிக்க ஃபோல்டர்
 if not os.path.exists("static"):
     os.makedirs("static")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Gemini Client
+# புதிய Google GenAI SDK பயன்பாடு
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def convert_to_wav(audio_data: bytes) -> bytes:
-    """Raw PCM ஆடியோவை WAV கோப்பாக மாற்றும்"""
-    bits_per_sample = 16
-    sample_rate = 24000
-    num_channels = 1
-    data_size = len(audio_data)
+    """Raw ஆடியோவை பிரவுசரில் கேட்கும் வகையில் மாற்றும்"""
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", 36 + data_size, b"WAVE", b"fmt ",
-        16, 1, num_channels, sample_rate,
-        sample_rate * 2, 2, bits_per_sample,
-        b"data", data_size
+        b"RIFF", 36 + len(audio_data), b"WAVE", b"fmt ",
+        16, 1, 1, 24000, 48000, 2, 16, b"data", len(audio_data)
     )
     return header + audio_data
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/generate")
 async def generate_audio(request: Request):
@@ -49,10 +43,10 @@ async def generate_audio(request: Request):
         if not text:
             return JSONResponse({"status": "error", "message": "Text is empty!"}, status_code=400)
 
-        # Gemini 2.0 Flash-க்கு சரியான முறையில் கட்டளை அனுப்புதல்
+        # கூகுள் ஆவணத்தில் உள்ளபடி சரியான TTS மாடல் பெயர்
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=f"Please read this text aloud exactly as it is: {text}",
+            model="gemini-2.5-flash-preview-tts", 
+            contents=text,
             config=types.GenerateContentConfig(
                 response_modalities=["audio"],
                 speech_config=types.SpeechConfig(
@@ -63,7 +57,7 @@ async def generate_audio(request: Request):
             )
         )
 
-        # ஆடியோ டேட்டாவைச் சேகரித்தல்
+        # ஆடியோ டேட்டாவை எடுத்தல்
         audio_bytes = b""
         if response.candidates and response.candidates[0].content.parts:
             for part in response.candidates[0].content.parts:
@@ -71,27 +65,19 @@ async def generate_audio(request: Request):
                     audio_bytes += part.inline_data.data
 
         if not audio_bytes:
-            # ஒருவேளை ஆடியோ வரவில்லை என்றால் மாற்று வழி
-            return JSONResponse({"status": "error", "message": "API did not return audio. Check your API key or Text."}, status_code=500)
+            return JSONResponse({"status": "error", "message": "API did not return audio data."}, status_code=500)
 
         # ஆடியோவைச் சேமித்தல்
-        file_name = "output.wav"
-        output_path = os.path.join("static", file_name)
-        
-        final_audio = convert_to_wav(audio_bytes)
+        output_path = os.path.join("static", "output.wav")
         with open(output_path, "wb") as f:
-            f.write(final_audio)
+            f.write(convert_to_wav(audio_bytes))
 
-        # பிரவுசரில் Cache ஆகாமல் இருக்க Random ID
-        v_id = os.urandom(4).hex()
         return {
             "status": "success", 
-            "audio_url": f"/static/{file_name}?v={v_id}"
+            "audio_url": f"/static/output.wav?v={os.urandom(2).hex()}"
         }
 
     except Exception as e:
-        # எரர் மெசேஜை தெளிவாகப் பார்க்க
-        print(f"Server Error: {str(e)}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 if __name__ == "__main__":
