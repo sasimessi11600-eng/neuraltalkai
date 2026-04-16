@@ -68,7 +68,7 @@ def convert_to_wav(audio_data: bytes) -> bytes:
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.post("/generate")
 async def generate_audio(request: Request):
