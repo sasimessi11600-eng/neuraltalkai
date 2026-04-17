@@ -1,30 +1,20 @@
 import os
-import uuid
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from google import genai
-from google.genai import types
-
-# =========================
-# APP
-# =========================
 app = FastAPI()
 
-os.makedirs("static", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
+os.makedirs("static", exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
-# =========================
-# GEMINI
-# =========================
-API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=API_KEY)
-
+@app.get("/")
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 # =========================
 # 10 LANGUAGES
 # =========================
