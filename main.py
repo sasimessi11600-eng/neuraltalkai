@@ -1,6 +1,7 @@
 import os
 import uuid
 import struct
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 from fastapi import FastAPI, Request, HTTPException
@@ -15,12 +16,21 @@ load_dotenv()
 
 app = FastAPI()
 
-# 1. Firebase Setup
-# உங்கள் firebase_key.json கோப்பை Render-ல் 'Secret File' ஆக அப்லோட் செய்திருக்க வேண்டும்
+# --- 🛡️ Firebase Setup (Environment Variable மூலம்) ---
 try:
-    cred = credentials.Certificate("firebase_key.json")
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
+    # Render-ன் 'Environment Variables' செக்ஷனில் 'FIREBASE_CONFIG' என்ற பெயரில் 
+    # உங்கள் முழு JSON-ஐயும் பேஸ்ட் செய்ய வேண்டும்.
+    firebase_json = os.getenv("FIREBASE_CONFIG")
+    
+    if firebase_json:
+        # JSON ஸ்ட்ரிங்கை டிட்க்ஷனரியாக மாற்றி Firebase-ஐ துவங்குதல்
+        firebase_info = json.loads(firebase_json)
+        cred = credentials.Certificate(firebase_info)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("Firebase successfully initialized from Environment Variable!")
+    else:
+        print("Error: FIREBASE_CONFIG Environment Variable not found!")
 except Exception as e:
     print(f"Firebase Init Error: {e}")
 
@@ -45,20 +55,24 @@ def to_wav(audio_bytes: bytes) -> bytes:
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={}
+    )
 
 @app.post("/generate")
 async def generate(request: Request):
     try:
         data = await request.json()
         text = data.get("text", "").strip()
-        voice = data.get("voice", "puck") # Gemini Voice Name
-        user_id = data.get("user_id", "test_user") # Login செய்த பயனரின் ID
+        voice = data.get("voice", "puck") # Gemini-ன் நவீன குரல்
+        user_id = data.get("user_id", "test_user") # உங்கள் டேட்டாபேஸில் உள்ள User ID
 
         if not text:
             raise HTTPException(status_code=400, detail="Text is empty")
 
-        # --- 🛡️ STEP 1: Firebase Credit Check ---
+        # --- 💰 கிரெடிட் செக் ---
         user_ref = db.collection("users").document(user_id)
         user_doc = user_ref.get()
 
@@ -66,15 +80,15 @@ async def generate(request: Request):
             return JSONResponse({"status": "error", "message": "User not found!"}, status_code=404)
 
         current_credits = user_doc.to_dict().get("credits", 0)
-        cost_per_request = 100 # ஒரு ஆடியோவுக்கு 100 கிரெடிட்கள்
+        cost = 100
 
-        if current_credits < cost_per_request:
+        if current_credits < cost:
             return JSONResponse({
                 "status": "error", 
-                "message": f"போதிய கிரெடிட்கள் இல்லை! உங்களின் பேலன்ஸ்: {current_credits}"
+                "message": f"போதிய கிரெடிட்கள் இல்லை! பேலன்ஸ்: {current_credits}"
             }, status_code=402)
 
-        # --- 🎙️ STEP 2: Gemini 2.5 Flash Preview TTS ---
+        # --- 🎙️ Gemini 2.5 Flash Preview TTS ---
         model_id = "gemini-2.5-flash-preview-tts"
         config = types.GenerateContentConfig(
             response_modalities=["audio"],
@@ -93,12 +107,12 @@ async def generate(request: Request):
                         audio_output += part.inline_data.data
 
         if not audio_output:
-            raise HTTPException(status_code=500, detail="Generation failed")
+            raise HTTPException(status_code=500, detail="Audio generation failed")
 
-        # --- 💰 STEP 3: Deduct Credits After Success ---
-        user_ref.update({"credits": firestore.Increment(-cost_per_request)})
+        # கிரெடிட் குறைத்தல் (Success-க்கு பிறகு)
+        user_ref.update({"credits": firestore.Increment(-cost)})
 
-        # Save File
+        # கோப்பாகச் சேமித்தல்
         filename = f"{uuid.uuid4()}.wav"
         filepath = os.path.join(AUDIO_DIR, filename)
         with open(filepath, "wb") as f:
@@ -106,8 +120,7 @@ async def generate(request: Request):
 
         return {
             "status": "success",
-            "audio_url": f"/static/audio_cache/{filename}",
-            "remaining_credits": current_credits - cost_per_request
+            "audio_url": f"/static/audio_cache/{filename}"
         }
 
     except Exception as e:
