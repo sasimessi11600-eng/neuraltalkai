@@ -40,11 +40,12 @@ def to_wav(audio_bytes: bytes) -> bytes:
 # முகப்பு பக்கம் (Home Page)
 @app.get("/")
 async def home(request: Request):
-    # சரியான முறை:
-return templates.TemplateResponse(
-    name="index.html", 
-    context={"request": request}
-)
+    # இங்கே இடைவெளி (Indentation) மிக முக்கியம்
+    return templates.TemplateResponse(
+        name="index.html", 
+        context={"request": request}
+    )
+
 # ஆடியோ ஜெனரேட் செய்யும் மெயின் API
 @app.post("/generate")
 async def generate(request: Request):
@@ -103,7 +104,8 @@ async def generate(request: Request):
         print(f"Error: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-# சர்வர் ரன் செய்ய (Local Testing)
+# சர்வர் ரன் செய்ய
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
