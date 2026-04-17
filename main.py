@@ -37,22 +37,22 @@ def to_wav(audio_bytes: bytes) -> bytes:
     )
     return header + audio_bytes
 
-# முகப்பு பக்கம் (Home Page)
+# 1. முகப்பு பக்கம் (Home Page) - பிழை இல்லாமல் சரி செய்யப்பட்டது
 @app.get("/")
 async def home(request: Request):
-    # இங்கே இடைவெளி (Indentation) மிக முக்கியம்
     return templates.TemplateResponse(
-        name="index.html", 
-        context={"request": request}
+        request=request,
+        name="index.html",
+        context={}
     )
 
-# ஆடியோ ஜெனரேட் செய்யும் மெயின் API
+# 2. ஆடியோ ஜெனரேட் செய்யும் மெயின் API
 @app.post("/generate")
 async def generate(request: Request):
     try:
         data = await request.json()
         text = data.get("text", "").strip()
-        voice = data.get("voice", "Puck") # Default-ஆக Puck குரல்
+        voice = data.get("voice", "Puck") # Gemini-ன் நவீன குரல்
 
         if not text:
             raise HTTPException(status_code=400, detail="Text is empty!")
@@ -101,11 +101,12 @@ async def generate(request: Request):
         }
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error occurred: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-# சர்வர் ரன் செய்ய
+# 3. Render சர்வர் ரன் செய்ய தேவையான போர்ட் அமைப்பு
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+    # Render-ல் $PORT என்விரான்மென்ட் வேரியபிளைப் பயன்படுத்தும்
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
