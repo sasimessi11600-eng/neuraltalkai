@@ -2,71 +2,97 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuralTalk AI</title>
+    <title>NeuralTalk AI - India's Premium TTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #0f172a; color: white; font-family: sans-serif; }
-        .card { background: #1e293b; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .slider { width: 100%; height: 8px; background: #334155; border-radius: 5px; outline: none; }
-        .btn-gen { background: #38bdf8; transition: 0.3s; }
-        .btn-gen:hover { background: #0ea5e9; }
-    </style>
 </head>
-<body class="p-5 flex justify-center">
-    <div class="w-full max-w-md card">
-        <h1 class="text-3xl font-bold mb-6">NeuralTalk AI</h1>
-        
-        <select id="voice" class="w-full p-3 mb-4 rounded bg-slate-700 border-none outline-none">
-            {% for v in voices %} <option value="{{ v }}">{{ v }}</option> {% endfor %}
-        </select>
+<body class="bg-gray-900 text-white">
 
-        <textarea id="text" rows="6" class="w-full p-4 mb-4 rounded bg-white text-black text-lg border-none" placeholder="இங்கே கதையைத் தட்டச்சு செய்யவும்..."></textarea>
-
-        <label class="block mb-2 text-sm">Speed (வேகம்)</label>
-        <input type="range" id="speed" min="0.5" max="2" step="0.5" value="1" class="slider mb-6">
-
-        <button onclick="generateAudio()" id="genBtn" class="w-full p-4 rounded-xl font-bold text-black btn-gen mb-6">Generate</button>
-
-        <div id="audioPlayer" class="hidden">
-            <audio id="player" controls class="w-full mb-4"></audio>
-            <a id="download" class="text-sky-400 font-bold block text-center" download>Download Audio</a>
-        </div>
+    <div class="bg-blue-600 text-center py-2 text-sm font-bold">
+        📍 தற்போது இந்தியாவில் மட்டும் கிடைக்கிறது | 10 இந்திய மொழிகள் ஆதரவு
     </div>
 
-    <script>
-        async function generateAudio() {
-            const btn = document.getElementById('genBtn');
-            const text = document.getElementById('text').value;
-            const voice = document.getElementById('voice').value;
-            const speedVal = document.getElementById('speed').value;
-            
-            let speed = "normal";
-            if(speedVal < 1) speed = "slow";
-            if(speedVal > 1) speed = "fast";
+    <div class="container mx-auto p-6">
+        <header class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-black text-blue-500">NeuralTalk AI</h1>
+            <nav class="space-x-4">
+                <a href="/pricing" class="hover:text-blue-400">Pricing</a>
+                <a href="#generate" class="bg-blue-600 px-4 py-2 rounded">Get Started</a>
+            </nav>
+        </header>
 
-            btn.innerText = "Generating...";
-            btn.disabled = true;
+        <main class="grid lg:grid-cols-3 gap-10">
+            <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700">
+                <h3 class="text-lg font-bold mb-4">குரலைத் தேர்ந்தெடுக்கவும்</h3>
+                
+                <label class="block text-xs text-gray-400 mb-1">Language (ஆதரிக்கப்படும் மொழிகள்)</label>
+                <select id="langSelect" class="w-full p-3 bg-gray-700 rounded-lg mb-4 outline-none border border-gray-600 focus:border-blue-500" onchange="updateVoices()">
+                    <option value="ta-IN">Tamil (தமிழ்)</option>
+                    <option value="hi-IN">Hindi (हिन्दी)</option>
+                    <option value="te-IN">Telugu (తెలుగు)</option>
+                    <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+                    <option value="ml-IN">Malayalam (മലയാളം)</option>
+                    <option value="mr-IN">Marathi (मराठी)</option>
+                    <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="bn-IN">Bengali (বাংলা)</option>
+                    <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+                    <option value="en-IN">English (Indian)</option>
+                </select>
 
-            const res = await fetch('/generate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text, voice, speed})
-            });
+                <label class="block text-xs text-gray-400 mb-1">Voice Model</label>
+                <select id="voiceSelect" class="w-full p-3 bg-gray-700 rounded-lg mb-6 border border-gray-600"></select>
 
-            const result = await res.json();
-            btn.innerText = "Generate";
-            btn.disabled = false;
+                <label class="block text-xs text-gray-400 mb-1">Pitch: <span id="pitchVal">0</span></label>
+                <input type="range" id="pitchRange" min="-20" max="20" value="0" class="w-full mb-6" oninput="document.getElementById('pitchVal').innerText = this.value">
 
-            if(result.status === "success") {
-                document.getElementById('audioPlayer').classList.remove('hidden');
-                document.getElementById('player').src = result.audio_url;
-                document.getElementById('download').href = result.audio_url;
-                document.getElementById('player').play();
-            } else {
-                alert("Error: " + result.message);
-            }
-        }
-    </script>
+                <div class="p-4 bg-gray-900 rounded-xl text-center">
+                    <p class="text-xs text-gray-500">Wallet Balance</p>
+                    <p class="text-xl font-bold text-yellow-500">50,000 Credits</p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                <textarea id="storyInput" rows="12" class="w-full p-6 bg-gray-800 rounded-2xl border border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none text-lg" placeholder="உங்கள் கதையை இங்கே பதிவிடவும்..."></textarea>
+                
+                <div class="flex items-center gap-3 bg-gray-800 p-4 rounded-xl border border-gray-700">
+                    <input type="checkbox" id="terms_agree" class="w-5 h-5">
+                    <label for="terms_agree" class="text-sm">
+                        நான் <a href="/terms" class="text-blue-400">விதிமுறைகள்</a> மற்றும் <a href="/refund" class="text-blue-400">ரீஃபண்ட் கொள்கைகளை</a> ஏற்றுக்கொள்கிறேன்.
+                    </label>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="generateBtn" onclick="handleGenerate()" class="flex-1 bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold text-lg shadow-lg">🚀 Generate Audio</button>
+                    <button id="downloadBtn" class="hidden bg-green-600 hover:bg-green-700 px-8 py-4 rounded-xl font-bold text-lg">📥 Download</button>
+                </div>
+
+                <div id="playerContainer" class="hidden bg-gray-800 p-4 rounded-xl">
+                    <audio id="audioPlayer" controls class="w-full"></audio>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-20 border-t border-gray-800 pt-10 pb-6 text-sm text-gray-500">
+            <div class="grid md:grid-cols-3 gap-8 mb-6">
+                <div>
+                    <h4 class="font-bold text-white mb-2">NeuralTalk AI</h4>
+                    <p>Independent Platform. Powered by Google Cloud API. Currently India Only.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-2">Legal</h4>
+                    <ul class="space-y-1">
+                        <li><a href="/terms">Terms & Conditions</a></li>
+                        <li><a href="/refund">Refund Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-2">Payment Support</h4>
+                    <p>Supported: Razorpay (INR Only)</p>
+                </div>
+            </div>
+            <p class="text-center text-xs">© 2026 NeuralTalk AI. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
 </body>
 </html>
