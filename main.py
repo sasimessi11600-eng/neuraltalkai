@@ -40,8 +40,11 @@ def to_wav(audio_bytes: bytes) -> bytes:
 # முகப்பு பக்கம் (Home Page)
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
+    # சரியான முறை:
+return templates.TemplateResponse(
+    name="index.html", 
+    context={"request": request}
+)
 # ஆடியோ ஜெனரேட் செய்யும் மெயின் API
 @app.post("/generate")
 async def generate(request: Request):
