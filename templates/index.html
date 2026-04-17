@@ -1,85 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="ta">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuralTalk AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px} 
-        .container{width:100%;max-width:600px;background:#1e293b;padding:25px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.4)} 
-        h1{text-align:center;color:#38bdf8} 
-        select,textarea,button,a{width:100%;margin-top:12px;padding:12px;border-radius:10px;border:none;box-sizing:border-box} 
-        select,textarea{background:#0f172a;color:#fff;border:1px solid #334155} 
-        textarea{height:160px;resize:vertical} 
-        button{background:#38bdf8;color:#000;font-weight:bold;cursor:pointer} 
-        #downloadBtn{text-decoration:none;background:#22c55e;color:#fff;display:none;text-align:center;margin-top:10px}
-        audio{width:100%;margin-top:15px;display:none}
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .card { background: #1e293b; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .slider { width: 100%; height: 8px; background: #334155; border-radius: 5px; outline: none; }
+        .btn-gen { background: #38bdf8; transition: 0.3s; }
+        .btn-gen:hover { background: #0ea5e9; }
     </style>
 </head>
-<body>
+<body class="p-5 flex justify-center">
+    <div class="w-full max-w-md card">
+        <h1 class="text-3xl font-bold mb-6">NeuralTalk AI</h1>
+        
+        <select id="voice" class="w-full p-3 mb-4 rounded bg-slate-700 border-none outline-none">
+            {% for v in voices %} <option value="{{ v }}">{{ v }}</option> {% endfor %}
+        </select>
 
-<div class="container">
-    <h1>🔥 NeuralTalk AI</h1>
-    <p>உயர்தர AI குரல்கள்</p>
+        <textarea id="text" rows="6" class="w-full p-4 mb-4 rounded bg-white text-black text-lg border-none" placeholder="இங்கே கதையைத் தட்டச்சு செய்யவும்..."></textarea>
 
-    <textarea id="text" placeholder="இங்கே உரையை உள்ளிடவும்..."></textarea>
+        <label class="block mb-2 text-sm">Speed (வேகம்)</label>
+        <input type="range" id="speed" min="0.5" max="2" step="0.5" value="1" class="slider mb-6">
 
-    <select id="language">
-        {% for code, name in languages.items() %}
-            <option value="{{ code }}">{{ name }}</option>
-        {% endfor %}
-    </select>
+        <button onclick="generateAudio()" id="genBtn" class="w-full p-4 rounded-xl font-bold text-black btn-gen mb-6">Generate</button>
 
-    <select id="voice">
-        {% for v in voices %}
-            <option value="{{ v }}">{{ v }}</option>
-        {% endfor %}
-    </select>
+        <div id="audioPlayer" class="hidden">
+            <audio id="player" controls class="w-full mb-4"></audio>
+            <a id="download" class="text-sky-400 font-bold block text-center" download>Download Audio</a>
+        </div>
+    </div>
 
-    <button id="generateBtn" onclick="generateAudio()">Generate Audio</button>
-
-    <audio id="player" controls></audio>
-    <a id="downloadBtn" download="speech.wav">Download Audio</a>
-</div>
-
-<script>
-async function generateAudio(){
-    const text = document.getElementById('text').value.strip;
-    const voice = document.getElementById('voice').value;
-    const btn = document.getElementById('generateBtn');
-
-    if(!text) { alert("Please enter text!"); return; }
-
-    btn.disabled = true;
-    btn.innerText = "Generating...";
-
-    try {
-        const response = await fetch('/generate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({text, voice})
-        });
-        const data = await response.json();
-
-        if(data.status === 'success'){
-            const player = document.getElementById('player');
-            const downloadBtn = document.getElementById('downloadBtn');
+    <script>
+        async function generateAudio() {
+            const btn = document.getElementById('genBtn');
+            const text = document.getElementById('text').value;
+            const voice = document.getElementById('voice').value;
+            const speedVal = document.getElementById('speed').value;
             
-            player.src = data.audio_url;
-            player.style.display = 'block';
-            player.play();
+            let speed = "normal";
+            if(speedVal < 1) speed = "slow";
+            if(speedVal > 1) speed = "fast";
 
-            downloadBtn.href = data.audio_url;
-            downloadBtn.style.display = 'block';
-        } else {
-            alert("Error: " + data.message);
+            btn.innerText = "Generating...";
+            btn.disabled = true;
+
+            const res = await fetch('/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text, voice, speed})
+            });
+
+            const result = await res.json();
+            btn.innerText = "Generate";
+            btn.disabled = false;
+
+            if(result.status === "success") {
+                document.getElementById('audioPlayer').classList.remove('hidden');
+                document.getElementById('player').src = result.audio_url;
+                document.getElementById('download').href = result.audio_url;
+                document.getElementById('player').play();
+            } else {
+                alert("Error: " + result.message);
+            }
         }
-    } catch (e) {
-        alert("Server error!");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Generate Audio";
-    }
-}
-</script>
-
+    </script>
 </body>
 </html>
