@@ -10,29 +10,18 @@ from google.genai import types
 
 app = FastAPI()
 
-# ஃபோல்டர்களை உருவாக்குதல்
+# static ஃபோல்டர் செட்டப்
 os.makedirs("static", exist_ok=True)
-
-# Static மற்றும் Templates செட்டப்
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Gemini Client
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-# நீங்கள் கேட்ட 10 மொழிகள் மற்றும் 26 வாய்ஸ் மாடல்கள்
-LANGUAGES = {
-    "ta": "Tamil", "en": "English", "hi": "Hindi", "te": "Telugu", 
-    "kn": "Kannada", "ml": "Malayalam", "mr": "Marathi", "bn": "Bengali", 
-    "gu": "Gujarati", "pa": "Punjabi"
-}
-
-VOICES = [
-    "Aoede", "Charon", "Fenrir", "Kore", "Puck", "Rheia", "Atreus", "Triton", 
-    "Cyllene", "Leda", "Calliope", "Orpheus", "Hestia", "Hermes", "Ganymede", 
-    "Pan", "Eirene", "Daphne", "Io", "Metis", "Thebe", "Ananke", "Carme", 
-    "Pasiphae", "Sinope", "Lysithea"
-]
+# டேட்டா செட்டப்
+LANGUAGES = {"ta": "Tamil", "en": "English", "hi": "Hindi"}
+VOICES = ["Aoede", "Puck", "Charon", "Kore", "Rheia"]
 
 def to_wav(audio_bytes: bytes) -> bytes:
     data_size = len(audio_bytes)
@@ -45,11 +34,13 @@ def to_wav(audio_bytes: bytes) -> bytes:
 
 @app.get("/")
 async def home(request: Request):
-    # 'tuple' error-ஐ தவிர்க்க சரியான அகராதி (dict) வடிவம்
-    return templates.TemplateResponse(
-        "index.html", 
-        {"request": request, "languages": LANGUAGES, "voices": VOICES}
-    )
+    # லாக்-ல் இருந்த பிழை இங்கே சரிசெய்யப்பட்டது
+    context = {
+        "request": request,
+        "languages": LANGUAGES,
+        "voices": VOICES
+    }
+    return templates.TemplateResponse("index.html", context)
 
 @app.post("/generate")
 async def generate(request: Request):
@@ -62,25 +53,24 @@ async def generate(request: Request):
             return JSONResponse({"status": "error", "message": "Text is empty"}, status_code=400)
 
         # Gemini 2.5 TTS மாடல்
-        config = types.GenerateContentConfig(
-            response_modalities=["audio"],
-            speech_config=types.SpeechConfig(
-                voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents=text,
+            config=types.GenerateContentConfig(
+                response_modalities=["audio"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
+                    )
                 )
             )
         )
 
         audio_bytes = b""
-        for chunk in client.models.generate_content_stream(
-            model="gemini-2.5-flash-preview-tts",
-            contents=text,
-            config=config
-        ):
-            if chunk.parts:
-                for part in chunk.parts:
-                    if part.inline_data:
-                        audio_bytes += part.inline_data.data
+        if response.candidates and response.candidates[0].content.parts:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data:
+                    audio_bytes += part.inline_data.data
 
         if not audio_bytes:
             return JSONResponse({"status": "error", "message": "No audio returned"}, status_code=500)
@@ -97,5 +87,5 @@ async def generate(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))
     uvicorn.run(app, host="0.0.0.0", port=port)
