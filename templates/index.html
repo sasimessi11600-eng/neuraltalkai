@@ -7,14 +7,18 @@
 
 <h1>🔥 NeuralTalk AI</h1>
 
-<textarea id="text" placeholder="Type here..."></textarea><br>
+<textarea id="text" placeholder="Type text..."></textarea>
 
+<br><br>
+
+<!-- LANGUAGE DROPDOWN -->
 <select id="language">
     {% for code, name in languages.items() %}
         <option value="{{ code }}">{{ name }}</option>
     {% endfor %}
 </select>
 
+<!-- VOICE DROPDOWN -->
 <select id="voice">
     {% for v in voices %}
         <option value="{{ v }}">{{ v }}</option>
@@ -24,6 +28,8 @@
 <br><br>
 
 <button onclick="generate()">Generate Voice</button>
+
+<br><br>
 
 <audio id="audio" controls></audio>
 
@@ -41,10 +47,10 @@ async function generate() {
 
     const data = await res.json();
 
-    if(data.audio_url){
+    if (data.audio_url) {
         document.getElementById("audio").src = data.audio_url;
     } else {
-        alert("Error: " + data.error);
+        alert(data.error || "Error");
     }
 }
 </script>
