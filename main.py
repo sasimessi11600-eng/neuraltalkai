@@ -1,4 +1,5 @@
 import os
+import uuid
 import struct
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -9,84 +10,92 @@ from google.genai import types
 
 app = FastAPI()
 
-if not os.path.exists("static"):
-    os.makedirs("static")
+# ஃபோல்டர்களை உருவாக்குதல்
+os.makedirs("static", exist_ok=True)
 
+# Static மற்றும் Templates செட்டப்
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Gemini Client
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# உங்கள் HTML-க்கு தேவையான மொழிகளின் பட்டியல்
+# நீங்கள் கேட்ட 10 மொழிகள் மற்றும் 26 வாய்ஸ் மாடல்கள்
 LANGUAGES = {
-    "ta": "Tamil",
-    "en": "English",
-    "hi": "Hindi"
+    "ta": "Tamil", "en": "English", "hi": "Hindi", "te": "Telugu", 
+    "kn": "Kannada", "ml": "Malayalam", "mr": "Marathi", "bn": "Bengali", 
+    "gu": "Gujarati", "pa": "Punjabi"
 }
 
-def convert_to_wav(audio_data: bytes) -> bytes:
-    data_size = len(audio_data)
+VOICES = [
+    "Aoede", "Charon", "Fenrir", "Kore", "Puck", "Rheia", "Atreus", "Triton", 
+    "Cyllene", "Leda", "Calliope", "Orpheus", "Hestia", "Hermes", "Ganymede", 
+    "Pan", "Eirene", "Daphne", "Io", "Metis", "Thebe", "Ananke", "Carme", 
+    "Pasiphae", "Sinope", "Lysithea"
+]
+
+def to_wav(audio_bytes: bytes) -> bytes:
+    data_size = len(audio_bytes)
     header = struct.pack(
         "<4sI4s4sIHHIIHH4sI",
         b"RIFF", 36 + data_size, b"WAVE", b"fmt ",
         16, 1, 1, 24000, 48000, 2, 16, b"data", data_size
     )
-    return header + audio_data
+    return header + audio_bytes
 
 @app.get("/")
 async def home(request: Request):
-    # இங்க தான் தப்பு பண்ணிருந்தோம், languages-ஐ உள்ள அனுப்பணும்
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "languages": LANGUAGES
-    })
+    # 'tuple' error-ஐ தவிர்க்க சரியான அகராதி (dict) வடிவம்
+    return templates.TemplateResponse(
+        "index.html", 
+        {"request": request, "languages": LANGUAGES, "voices": VOICES}
+    )
 
 @app.post("/generate")
-async def generate_audio(request: Request):
+async def generate(request: Request):
     try:
         data = await request.json()
-        text = data.get("text")
+        text = data.get("text", "").strip()
         voice = data.get("voice", "Aoede")
 
         if not text:
-            return JSONResponse({"status": "error", "message": "Text is empty!"}, status_code=400)
+            return JSONResponse({"status": "error", "message": "Text is empty"}, status_code=400)
 
         # Gemini 2.5 TTS மாடல்
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-preview-tts", 
-            contents=text,
-            config=types.GenerateContentConfig(
-                response_modalities=["audio"],
-                speech_config=types.SpeechConfig(
-                    voice_config=types.VoiceConfig(
-                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
-                    )
+        config = types.GenerateContentConfig(
+            response_modalities=["audio"],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
                 )
             )
         )
 
         audio_bytes = b""
-        if response.candidates and response.candidates[0].content.parts:
-            for part in response.candidates[0].content.parts:
-                if part.inline_data:
-                    audio_bytes += part.inline_data.data
+        for chunk in client.models.generate_content_stream(
+            model="gemini-2.5-flash-preview-tts",
+            contents=text,
+            config=config
+        ):
+            if chunk.parts:
+                for part in chunk.parts:
+                    if part.inline_data:
+                        audio_bytes += part.inline_data.data
 
         if not audio_bytes:
-            return JSONResponse({"status": "error", "message": "No audio returned!"}, status_code=500)
+            return JSONResponse({"status": "error", "message": "No audio returned"}, status_code=500)
 
-        file_name = "output.wav"
-        output_path = os.path.join("static", file_name)
-        with open(output_path, "wb") as f:
-            f.write(convert_to_wav(audio_bytes))
+        filename = f"{uuid.uuid4()}.wav"
+        filepath = os.path.join("static", filename)
+        with open(filepath, "wb") as f:
+            f.write(to_wav(audio_bytes))
 
-        return {"status": "success", "audio_url": f"/static/{file_name}?v={os.urandom(2).hex()}"}
+        return {"status": "success", "audio_url": f"/static/{filename}"}
 
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.getenv("PORT", 5000))
     uvicorn.run(app, host="0.0.0.0", port=port)
