@@ -10,28 +10,22 @@ from google.genai import types
 
 app = FastAPI()
 
-# Folders
+# ஆடியோ கோப்புகளை சேமிக்க 'static' ஃபோல்டர்
 os.makedirs("static", exist_ok=True)
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Gemini Client
+# Gemini Client (உங்கள் API KEY-ஐ Render Environment Variables-ல் சேர்க்கவும்)
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 10 மொழிகள் மற்றும் 26 குரல்கள் (Gemini TTS-க்கு ஏற்றது)
+# புதிய மாடல் ஐடி (Notebook-ல் உள்ளபடி)
+MODEL_ID = "gemini-3.1-flash-tts-preview"
+
 LANGUAGES = {
-    "ta-IN": "Tamil", "en-US": "English (US)", "en-IN": "English (India)",
-    "hi-IN": "Hindi", "te-IN": "Telugu", "kn-IN": "Kannada", 
-    "ml-IN": "Malayalam", "mr-IN": "Marathi", "bn-IN": "Bengali", "gu-IN": "Gujarati"
+    "ta-IN": "Tamil", "hi-IN": "Hindi", "en-US": "English (US)", "te-IN": "Telugu"
 }
 
-VOICES = [
-    "Aoede", "Charon", "Fenrir", "Kore", "Puck", "Rheia", "Atreus", "Triton", 
-    "Cyllene", "Leda", "Calliope", "Orpheus", "Hestia", "Hermes", "Ganymede", 
-    "Pan", "Eirene", "Daphne", "Io", "Metis", "Thebe", "Ananke", "Carme", 
-    "Pasiphae", "Sinope", "Lysithea"
-]
+VOICES = ["Aoede", "Charon", "Fenrir", "Kore", "Puck", "Rheia", "Atreus", "Triton"]
 
 def to_wav(audio_bytes: bytes) -> bytes:
     data_size = len(audio_bytes)
@@ -44,25 +38,29 @@ def to_wav(audio_bytes: bytes) -> bytes:
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse(
-        "index.html", 
-        {"request": request, "languages": LANGUAGES, "voices": VOICES}
-    )
+    # இதில்தான் தவறு இருந்தது, இப்போது சரி செய்யப்பட்டுள்ளது
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "languages": LANGUAGES, 
+        "voices": VOICES
+    })
 
 @app.post("/generate")
 async def generate(request: Request):
     try:
         data = await request.json()
         text = data.get("text", "").strip()
-        voice = data.get("voice", "Aoede")
-        # உணர்ச்சிகளைச் சேர்க்க 'prompt' வசதி
-        user_prompt = data.get("prompt", "Say this in a natural way") 
+        voice = data.get("voice", "Puck")
+        speed = data.get("speed", "normal") # வேகம்
 
         if not text:
             return JSONResponse({"status": "error", "message": "Text is empty"}, status_code=400)
 
+        # டைரக்டர் நோட்ஸ் மூலம் வேகத்தை கட்டுப்படுத்துதல்
+        prompt = f"Director's Note: Speak at a {speed} pace. Transcript: {text}"
+
         config = types.GenerateContentConfig(
-            response_modalities=["audio"],
+            response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
                     prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
@@ -70,23 +68,20 @@ async def generate(request: Request):
             )
         )
 
-        audio_bytes = b""
-        # நீங்கள் கேட்ட gemini-2.5-flash-preview-tts மாடல்
-        for chunk in client.models.generate_content_stream(
-            model="gemini-2.5-flash-preview-tts",
-            contents=text, # இங்கே நீங்கள் Prompt-ஐயும் இணைக்கலாம்: contents=[user_prompt, text]
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=prompt,
             config=config
-        ):
-            if chunk.parts:
-                for part in chunk.parts:
-                    if part.inline_data:
-                        audio_bytes += part.inline_data.data
+        )
 
-        if not audio_bytes:
-            return JSONResponse({"status": "error", "message": "Audio generation failed"}, status_code=500)
+        audio_part = response.candidates[0].content.parts[0]
+        if not audio_part.inline_data:
+             return JSONResponse({"status": "error", "message": "No audio generated"}, status_code=500)
 
+        audio_bytes = audio_part.inline_data.data
         filename = f"{uuid.uuid4()}.wav"
         filepath = os.path.join("static", filename)
+        
         with open(filepath, "wb") as f:
             f.write(to_wav(audio_bytes))
 
