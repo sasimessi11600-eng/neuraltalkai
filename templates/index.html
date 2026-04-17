@@ -7,18 +7,19 @@
 
 <h1>🔥 NeuralTalk AI</h1>
 
-<textarea id="text" placeholder="Type text..."></textarea>
+<!-- TEXT -->
+<textarea id="text"></textarea>
 
 <br><br>
 
-<!-- LANGUAGE DROPDOWN -->
+<!-- LANGUAGE SELECT -->
 <select id="language">
     {% for code, name in languages.items() %}
         <option value="{{ code }}">{{ name }}</option>
     {% endfor %}
 </select>
 
-<!-- VOICE DROPDOWN -->
+<!-- VOICE SELECT -->
 <select id="voice">
     {% for v in voices %}
         <option value="{{ v }}">{{ v }}</option>
@@ -27,31 +28,11 @@
 
 <br><br>
 
-<button onclick="generate()">Generate Voice</button>
-
-<br><br>
-
-<audio id="audio" controls></audio>
+<button onclick="generate()">Generate</button>
 
 <script>
-async function generate() {
-    const text = document.getElementById("text").value;
-    const voice = document.getElementById("voice").value;
-    const language = document.getElementById("language").value;
-
-    const res = await fetch("/generate", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({text, voice, language})
-    });
-
-    const data = await res.json();
-
-    if (data.audio_url) {
-        document.getElementById("audio").src = data.audio_url;
-    } else {
-        alert(data.error || "Error");
-    }
+function generate(){
+    alert("API connect next step 🔥");
 }
 </script>
 
