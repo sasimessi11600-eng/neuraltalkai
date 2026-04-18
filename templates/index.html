@@ -1,66 +1,46 @@
 <!DOCTYPE html>
-<html lang="ta">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuralTalk AI - Text to Speech</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>NeuralTalkAI</title>
+<style>
+body{margin:0;font-family:Arial;background:#0b1020;color:#fff}
+.wrap{max-width:820px;margin:auto;padding:20px}.card{background:#141b34;padding:20px;border-radius:20px}
+h1{margin-top:0}textarea,select,input,button{width:100%;padding:12px;margin:8px 0;border-radius:12px;border:none}
+textarea{min-height:180px}button{background:#22c55e;font-weight:700}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.small{font-size:12px;opacity:.8}
+a{color:#93c5fd}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="logo">NeuralTalk AI</h1>
-            <nav>
-                <a href="#">Pricing</a>
-                <button class="btn-primary">Get Started</button>
-            </nav>
-        </header>
-
-        <main>
-            <div class="glass-card">
-                <h3>குரலைத் தேர்ந்தெடுக்கவும்</h3>
-                
-                <div class="input-group">
-                    <label>Language (ஆதரிக்கப்படும் மொழிகள்)</label>
-                    <select id="langSelect" onchange="updateVoices()">
-                        <option value="ta-IN">Tamil (தமிழ்)</option>
-                        <option value="en-IN">English (India)</option>
-                        <option value="hi-IN">Hindi (हिन्दी)</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label>Voice Model</label>
-                    <select id="voiceSelect">
-                        </select>
-                </div>
-
-                <div class="wallet-badge">
-                    <span>Wallet Balance</span>
-                    <strong id="balanceDisplay">50,000 Credits</strong>
-                </div>
-
-                <textarea id="textInput" placeholder="இங்கே டைப் செய்யவும்..."></textarea>
-
-                <div class="terms-area">
-                    <input type="checkbox" id="termsCheckbox" onchange="toggleButton()">
-                    <label for="termsCheckbox">நான் விதிமுறைகள் மற்றும் ரீஃபண்ட் கொள்கைகளை ஏற்றுக்கொள்கிறேன்.</label>
-                </div>
-
-                <button id="generateBtn" class="generate-btn" onclick="handleGenerate()" disabled>
-                    🚀 Generate Audio
-                </button>
-
-                <div id="statusMsg"></div>
-                
-                <div id="audioPlayerContainer" style="margin-top: 20px; display: none;">
-                    <audio id="audioPlayer" controls></audio>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="/static/script.js"></script>
+<div class='wrap'>
+<div class='card'>
+<h1>NeuralTalkAI - Gemini TTS</h1>
+<p class='small'>26 Voice Ready • Indian Languages • Play & Download</p>
+<textarea id='text' placeholder='Paste your story here'></textarea>
+<div class='row'>
+<select id='voice'>
+<option>Kore</option><option>Puck</option><option>Zephyr</option><option>Aoede</option><option>Fenrir</option><option>Sulafat</option><option>Orus</option><option>Charon</option>
+</select>
+<input id='style' placeholder='Storyteller / News Reader / Calm Voice'>
+</div>
+<button onclick='generateAudio()'>Generate Audio</button>
+<p id='status'></p>
+<audio id='player' controls style='width:100%;display:none'></audio>
+<br><br>
+<a id='download' style='display:none' download>Download Audio</a>
+<hr>
+<p class='small'>About | Privacy Policy | Terms | Contact</p>
+</div></div>
+<script>
+async function generateAudio(){
+status.innerText='Generating...'; player.style.display='none'; download.style.display='none';
+const res = await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.value,voice:voice.value,style:style.value||'Speak naturally'})});
+const data = await res.json();
+if(data.file){player.src=data.file;player.style.display='block';player.play();download.href=data.file;download.style.display='inline';download.innerText='Download Audio';status.innerText='Done';}
+else{status.innerText='Error';}
+}
+</script>
 </body>
 </html>
