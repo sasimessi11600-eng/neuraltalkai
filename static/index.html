@@ -10,12 +10,25 @@
 
 <div class="wrap">
 <div class="card">
+
 <h1>NeuralTalkAI</h1>
 <p class="sub">10 Indian Languages • Gemini TTS</p>
 
 <textarea id="text" placeholder="Paste your text here..."></textarea>
 
-<div class="grid">
+<select id="language">
+<option>Tamil</option>
+<option>Hindi</option>
+<option>Telugu</option>
+<option>Malayalam</option>
+<option>Kannada</option>
+<option>Marathi</option>
+<option>Gujarati</option>
+<option>Bengali</option>
+<option>Punjabi</option>
+<option>English India</option>
+</select>
+
 <select id="voice">
 <option>Kore</option>
 <option>Puck</option>
@@ -30,13 +43,16 @@
 </select>
 
 <input id="style" placeholder="Storyteller / Calm / News Reader">
-</div>
+
+<label>Pitch: <span id="pitchValue">0</span></label>
+<input type="range" id="pitch" min="-10" max="10" value="0">
 
 <button onclick="generateAudio()">Generate Audio</button>
 
 <p id="status"></p>
 
 <audio id="player" controls style="display:none;width:100%"></audio>
+
 <a id="download" style="display:none">Download Audio</a>
 
 </div>
