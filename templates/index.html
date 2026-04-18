@@ -4,64 +4,29 @@
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>NeuralTalkAI</title>
-<style>
-body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#0b1020,#111827);color:#fff}
-.wrap{max-width:900px;margin:auto;padding:24px}.card{background:rgba(20,27,52,.95);padding:24px;border-radius:22px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-h1{margin:0 0 8px;font-size:32px}.sub{opacity:.8;margin-bottom:18px}
-textarea,select,input,button{width:100%;padding:14px;margin:8px 0;border-radius:14px;border:none;font-size:15px}
-textarea{min-height:180px;resize:vertical}button{background:#22c55e;color:#08110a;font-weight:700;cursor:pointer}
-button:hover{filter:brightness(1.05)}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.small{font-size:12px;opacity:.75}.pill{display:inline-block;background:#1f2937;padding:6px 10px;border-radius:999px;margin:2px;font-size:12px}
-footer{margin-top:18px;font-size:12px;opacity:.7}
-@media(max-width:700px){.row,.row3{grid-template-columns:1fr}}
-</style>
+<link rel='stylesheet' href='/static/style.css'>
 </head>
 <body>
 <div class='wrap'>
 <div class='card'>
 <h1>NeuralTalkAI</h1>
-<div class='sub'>10 Indian Languages • 10 Premium Voices • Gemini TTS</div>
-<div>
-<span class='pill'>Fast</span><span class='pill'>Natural Voice</span><span class='pill'>Download</span>
-</div>
-<textarea id='text' placeholder='Paste your story or script here...'></textarea>
+<p class='sub'>10 Indian Languages • 10 Voice Models • Gemini TTS</p>
+<textarea id='text' placeholder='Paste text here...'></textarea>
 <div class='row3'>
 <select id='language'>
-<option value='ta-IN'>Tamil</option>
-<option value='hi-IN'>Hindi</option>
-<option value='te-IN'>Telugu</option>
-<option value='ml-IN'>Malayalam</option>
-<option value='kn-IN'>Kannada</option>
-<option value='mr-IN'>Marathi</option>
-<option value='gu-IN'>Gujarati</option>
-<option value='bn-IN'>Bengali</option>
-<option value='pa-IN'>Punjabi</option>
-<option value='en-IN'>English (India)</option>
+<option>Tamil</option><option>Hindi</option><option>Telugu</option><option>Malayalam</option><option>Kannada</option><option>Marathi</option><option>Gujarati</option><option>Bengali</option><option>Punjabi</option><option>English India</option>
 </select>
 <select id='voice'>
 <option>Kore</option><option>Puck</option><option>Zephyr</option><option>Aoede</option><option>Fenrir</option><option>Sulafat</option><option>Orus</option><option>Charon</option><option>Algenib</option><option>Sadaltager</option>
 </select>
-<input id='style' placeholder='Storyteller / News Reader / Calm Voice'>
+<input id='style' placeholder='Storyteller / News Reader / Calm'>
 </div>
 <button onclick='generateAudio()'>Generate Audio</button>
 <p id='status'></p>
-<audio id='player' controls style='width:100%;display:none'></audio>
-<br><br>
-<a id='download' style='display:none;color:#93c5fd' download>Download Audio</a>
-<footer>About • Privacy Policy • Terms • Contact</footer>
+<audio id='player' controls style='display:none;width:100%'></audio>
+<a id='download' style='display:none' download>Download</a>
 </div>
 </div>
-<script>
-async function generateAudio(){
-status.innerText='Generating...';
-player.style.display='none'; download.style.display='none';
-const payload={text:text.value,voice:voice.value,style:(style.value||'Speak naturally in '+language.options[language.selectedIndex].text)};
-const res=await fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-const data=await res.json();
-if(data.file){player.src=data.file;player.style.display='block';player.play();download.href=data.file;download.style.display='inline';status.innerText='Done';}
-else{status.innerText='Error generating audio';}
-}
-</script>
+<script src='/static/script.js'></script>
 </body>
 </html>
