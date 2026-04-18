@@ -1,4 +1,5 @@
-import os, uuid
+import os
+import uuid
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -22,22 +23,28 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 
+
 class TTSRequest(BaseModel):
     text: str
     voice: str = "Kore"
     style: str = "Speak naturally"
 
+
 @app.get("/")
 def home():
     return FileResponse("static/index.html")
 
+
 @app.post("/generate")
 def generate(req: TTSRequest):
     if client is None:
-        raise HTTPException(500, "Missing GEMINI_API_KEY")
+        raise HTTPException(status_code=500, detail="Missing GEMINI_API_KEY")
+
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Text required")
 
     try:
-        r = client.models.generate_content(
+        response = client.models.generate_content(
             model="gemini-2.5-flash-preview-tts",
             contents=f"{req.style}: {req.text}",
             config=types.GenerateContentConfig(
@@ -52,21 +59,27 @@ def generate(req: TTSRequest):
             )
         )
 
-        data = r.candidates[0].content.parts[0].inline_data.data
-        filename = f"{uuid.uuid4()}.wav"
-        path = f"audio/{filename}"
+        audio_bytes = response.candidates[0].content.parts[0].inline_data.data
 
-        with open(path, "wb") as f:
-            f.write(data)
+        if not audio_bytes:
+            raise Exception("No audio returned")
+
+        filename = f"{uuid.uuid4()}.wav"
+        filepath = f"audio/{filename}"
+
+        with open(filepath, "wb") as f:
+            f.write(audio_bytes)
 
         return {"file": f"/audio/{filename}"}
 
     except Exception as e:
-        raise HTTPException(500, str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/audio/{name}")
 def audio(name: str):
     path = f"audio/{name}"
     if not os.path.exists(path):
-        raise HTTPException(404, "Not found")
-    return FileResponse(path, media_type="audio/wav")
+        raise HTTPException(status_code=404, detail="Not found")
+
+    return FileResponse(path, media_type="audio/wav", filename=name)
