@@ -12,29 +12,28 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 
 os.makedirs('audio', exist_ok=True)
-os.makedirs('static', exist_ok=True)
-os.makedirs('templates', exist_ok=True)
-
 app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
 
-client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
+API_KEY = os.getenv('GEMINI_API_KEY')
+client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 class TTSRequest(BaseModel):
-    text: str
-    voice: str = 'Kore'
-    style: str = 'Speak naturally'
+    text:str
+    voice:str='Kore'
+    style:str='Speak naturally'
 
 @app.get('/')
 async def home(request: Request):
     return templates.TemplateResponse('index.html', {'request': request})
 
 @app.post('/generate')
-def generate(req: TTSRequest):
+def generate(req:TTSRequest):
+    if client is None:
+        raise HTTPException(status_code=500, detail='Missing GEMINI_API_KEY')
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail='Text required')
     try:
-        if not req.text.strip():
-            raise HTTPException(status_code=400, detail='Text required')
-
         response = client.models.generate_content(
             model='gemini-2.5-flash-preview-tts',
             contents=f"{req.style}: {req.text}",
@@ -49,21 +48,17 @@ def generate(req: TTSRequest):
                 )
             )
         )
-
         data = response.candidates[0].content.parts[0].inline_data.data
-        filename = f"{uuid.uuid4()}.wav"
-        path = f'audio/{filename}'
-
-        with open(path, 'wb') as f:
+        name = f"{uuid.uuid4()}.wav"
+        path = f'audio/{name}'
+        with open(path,'wb') as f:
             f.write(data)
-
-        return {'success': True, 'file': f'/audio/{filename}'}
-
+        return {'success':True,'file':f'/audio/{name}'}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get('/audio/{name}')
-def get_audio(name: str):
+def audio(name:str):
     path = f'audio/{name}'
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail='File not found')
