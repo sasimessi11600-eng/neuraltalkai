@@ -1,43 +1,64 @@
-async function generateAudio(){
+const pitch = document.getElementById("pitch");
+const pitchValue = document.getElementById("pitchValue");
 
-const text = document.getElementById("text").value;
-const voice = document.getElementById("voice").value;
-const style = document.getElementById("style").value || "Speak naturally";
+pitch.oninput = function () {
+    pitchValue.innerText = this.value;
+};
 
-const status = document.getElementById("status");
-const player = document.getElementById("player");
-const download = document.getElementById("download");
+async function generateAudio() {
+    const text = document.getElementById("text").value;
+    const language = document.getElementById("language").value;
+    const voice = document.getElementById("voice").value;
+    const customStyle = document.getElementById("style").value;
+    const pitchLevel = document.getElementById("pitch").value;
 
-status.innerText = "Generating...";
-player.style.display = "none";
-download.style.display = "none";
+    const status = document.getElementById("status");
+    const player = document.getElementById("player");
+    const download = document.getElementById("download");
 
-const res = await fetch("/generate",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-text:text,
-voice:voice,
-style:style
-})
-});
+    if (!text.trim()) {
+        status.innerText = "Please enter text";
+        return;
+    }
 
-const data = await res.json();
+    const style =
+        customStyle ||
+        `Speak naturally in ${language} with pitch ${pitchLevel}`;
 
-if(data.file){
-player.src = data.file;
-player.style.display = "block";
-player.play();
+    status.innerText = "Generating...";
+    player.style.display = "none";
+    download.style.display = "none";
 
-download.href = data.file;
-download.style.display = "block";
-download.innerText = "Download Audio";
+    try {
+        const res = await fetch("/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: text,
+                voice: voice,
+                style: style
+            })
+        });
 
-status.innerText = "Done";
-}else{
-status.innerText = "Error";
-}
+        const data = await res.json();
 
+        if (data.file) {
+            player.src = data.file;
+            player.style.display = "block";
+            player.play();
+
+            download.href = data.file;
+            download.innerText = "Download Audio";
+            download.style.display = "block";
+
+            status.innerText = "Done";
+        } else {
+            status.innerText = "Failed";
+        }
+
+    } catch (error) {
+        status.innerText = "Server Error";
+    }
 }
