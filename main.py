@@ -1,31 +1,26 @@
 import os
 import uuid
 import wave
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
 
 import firebase_admin
-from firebase_admin import credentials, auth, firestore
+from firebase_admin import credentials, firestore, auth
 
-# -------------------------
-# Firebase Init
-# -------------------------
+# ------------------ Firebase ------------------
 if not firebase_admin._apps:
     cred = credentials.Certificate("firebase_key.json")
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# -------------------------
-# FastAPI Init
-# -------------------------
+# ------------------ App ------------------
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,20 +31,12 @@ app.add_middleware(
 os.makedirs("audio", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# -------------------------
-# Gemini API
-# -------------------------
+# ------------------ Gemini ------------------
 API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 
-# -------------------------
-# Models
-# -------------------------
-class SignupModel(BaseModel):
-    email: str
-    password: str
-
-class LoginModel(BaseModel):
+# ------------------ Models ------------------
+class UserModel(BaseModel):
     email: str
     password: str
 
@@ -60,25 +47,17 @@ class BuyModel(BaseModel):
 class TTSRequest(BaseModel):
     uid: str
     text: str
-    voice: str = "Kore"
-    style: str = "Speak naturally"
+    voice: str
+    style: str
 
-# -------------------------
-# Pages
-# -------------------------
+# ------------------ Pages ------------------
 @app.get("/")
 def home():
     return FileResponse("static/index.html")
 
-@app.get("/dashboard")
-def dashboard():
-    return FileResponse("static/dashboard.html")
-
-# -------------------------
-# Signup
-# -------------------------
+# ------------------ Signup ------------------
 @app.post("/signup")
-def signup(data: SignupModel):
+def signup(data: UserModel):
     try:
         user = auth.create_user(
             email=data.email,
@@ -93,39 +72,28 @@ def signup(data: SignupModel):
         })
 
         return {"success": True, "uid": user.uid}
-
     except Exception as e:
         raise HTTPException(400, str(e))
 
-# -------------------------
-# Login Demo
-# -------------------------
+# ------------------ Login Demo ------------------
 @app.post("/login")
-def login(data: LoginModel):
+def login(data: UserModel):
     docs = db.collection("users").where("email", "==", data.email).stream()
-
     for doc in docs:
         return {"success": True, "uid": doc.id}
-
     raise HTTPException(401, "User not found")
 
-# -------------------------
-# Get User Info
-# -------------------------
+# ------------------ Profile ------------------
 @app.get("/me/{uid}")
 def me(uid: str):
     doc = db.collection("users").document(uid).get()
-
     if not doc.exists:
         raise HTTPException(404, "User not found")
-
     return doc.to_dict()
 
-# -------------------------
-# Demo Buy Credits
-# -------------------------
-@app.post("/buy-demo")
-def buy_demo(data: BuyModel):
+# ------------------ Buy Demo ------------------
+@app.post("/buy")
+def buy(data: BuyModel):
     plans = {
         149: (35000, "Starter"),
         299: (80000, "Pro"),
@@ -135,27 +103,18 @@ def buy_demo(data: BuyModel):
     if data.amount not in plans:
         raise HTTPException(400, "Invalid plan")
 
-    add_chars, plan_name = plans[data.amount]
-
+    chars, plan = plans[data.amount]
     ref = db.collection("users").document(data.uid)
     user = ref.get().to_dict()
 
-    new_credits = user["credits"] + add_chars
-
     ref.update({
-        "credits": new_credits,
-        "plan": plan_name
+        "credits": user["credits"] + chars,
+        "plan": plan
     })
 
-    return {
-        "success": True,
-        "credits": new_credits,
-        "plan": plan_name
-    }
+    return {"success": True}
 
-# -------------------------
-# Generate TTS
-# -------------------------
+# ------------------ Generate ------------------
 @app.post("/generate")
 def generate(req: TTSRequest):
     if client is None:
@@ -189,38 +148,30 @@ def generate(req: TTSRequest):
             )
         )
 
-        pcm_data = response.candidates[0].content.parts[0].inline_data.data
+        pcm = response.candidates[0].content.parts[0].inline_data.data
 
-        filename = f"{uuid.uuid4()}.wav"
-        filepath = f"audio/{filename}"
+        name = f"{uuid.uuid4()}.wav"
+        path = f"audio/{name}"
 
-        with wave.open(filepath, "wb") as wav_file:
-            wav_file.setnchannels(1)
-            wav_file.setsampwidth(2)
-            wav_file.setframerate(24000)
-            wav_file.writeframes(pcm_data)
+        with wave.open(path, "wb") as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(24000)
+            wav.writeframes(pcm)
 
         ref.update({
             "credits": user["credits"] - chars,
             "used_chars": user["used_chars"] + chars
         })
 
-        return {
-            "success": True,
-            "file": f"/audio/{filename}"
-        }
+        return {"file": f"/audio/{name}"}
 
     except Exception as e:
         raise HTTPException(500, str(e))
 
-# -------------------------
-# Audio
-# -------------------------
 @app.get("/audio/{name}")
 def audio(name: str):
     path = f"audio/{name}"
-
     if not os.path.exists(path):
         raise HTTPException(404, "Not found")
-
-    return FileResponse(path, media_type="audio/wav", filename=name)
+    return FileResponse(path, media_type="audio/wav")
