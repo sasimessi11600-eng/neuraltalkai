@@ -12,9 +12,27 @@
 <div class="card">
 
 <h1>NeuralTalkAI</h1>
-<p class="sub">10 Indian Languages • Gemini TTS</p>
+<p class="sub">10 Indian Languages • 10 Voices • Gemini TTS</p>
 
-<textarea id="text" placeholder="Paste your text here..."></textarea>
+<!-- Auth -->
+<div id="authBox">
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<div class="grid">
+<button onclick="signup()">Sign Up</button>
+<button onclick="login()">Sign In</button>
+</div>
+</div>
+
+<!-- App -->
+<div id="appBox" style="display:none;">
+
+<div class="topbar">
+<span id="userEmail"></span>
+<span>Credits: <b id="credits">0</b></span>
+</div>
+
+<textarea id="text" placeholder="Paste your story here..."></textarea>
 
 <select id="language">
 <option>Tamil</option>
@@ -49,11 +67,18 @@
 
 <button onclick="generateAudio()">Generate Audio</button>
 
+<div class="plans">
+<button onclick="buyPlan(149)">₹149 / 35k</button>
+<button onclick="buyPlan(299)">₹299 / 80k</button>
+<button onclick="buyPlan(599)">₹599 / 170k</button>
+</div>
+
 <p id="status"></p>
 
 <audio id="player" controls style="display:none;width:100%"></audio>
-
 <a id="download" style="display:none">Download Audio</a>
+
+</div>
 
 </div>
 </div>
